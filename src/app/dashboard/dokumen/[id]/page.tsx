@@ -144,7 +144,7 @@ export default function DocumentDetailPage() {
               value={sec.content}
               onChange={(e) => updateSection(sec.id, e.target.value)}
               rows={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none text-sm"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none text-gray-900 bg-white text-sm"
             />
           </div>
         ))}

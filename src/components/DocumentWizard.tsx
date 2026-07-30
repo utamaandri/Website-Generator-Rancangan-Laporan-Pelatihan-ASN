@@ -205,7 +205,7 @@ export function DocumentWizard() {
                 onChange={(e) =>
                   setForm({ ...form, namaPeserta: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none text-gray-900 bg-white"
                 placeholder="Nama lengkap"
               />
             </div>
@@ -218,7 +218,7 @@ export function DocumentWizard() {
                 onChange={(e) =>
                   setForm({ ...form, jenisPelatihan: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none text-gray-900 bg-white"
               >
                 <option value="">Pilih jenis pelatihan</option>
                 <option value="Latsar">Latsar</option>
@@ -236,7 +236,7 @@ export function DocumentWizard() {
                 onChange={(e) =>
                   setForm({ ...form, instansi: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none text-gray-900 bg-white"
                 placeholder="Nama instansi"
               />
             </div>
@@ -250,7 +250,7 @@ export function DocumentWizard() {
                 onChange={(e) =>
                   setForm({ ...form, jabatan: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none text-gray-900 bg-white"
                 placeholder="Jabatan"
               />
             </div>
@@ -264,7 +264,7 @@ export function DocumentWizard() {
                   setForm({ ...form, tugasFungsi: e.target.value })
                 }
                 rows={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none text-gray-900 bg-white"
                 placeholder="Deskripsikan tugas dan fungsi jabatan Anda"
               />
             </div>
@@ -283,7 +283,7 @@ export function DocumentWizard() {
                       addKeyword();
                     }
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none text-gray-900 bg-white"
                   placeholder="Ketik keyword lalu Enter"
                 />
                 <button
@@ -399,7 +399,7 @@ export function DocumentWizard() {
                     value={sec.content}
                     onChange={(e) => updateSection(i, e.target.value)}
                     rows={4}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none text-sm"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent outline-none text-gray-900 bg-white text-sm"
                   />
                 </div>
               ))}
