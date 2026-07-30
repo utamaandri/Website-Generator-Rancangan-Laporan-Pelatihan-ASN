@@ -4,19 +4,20 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+  relationMode = "prisma"
 }
 
 model User {
-  id            String          @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String          @unique
+  email         String    @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String          @default("peserta")
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  role          String    @default("peserta")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   accounts  Account[]
   sessions  Session[]
@@ -102,12 +103,12 @@ model DocumentSection {
 }
 
 model Template {
-  id          String            @id @default(cuid())
-  name        String
-  trainingTypeId String
-  description String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  name            String
+  trainingTypeId  String
+  description     String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   trainingType TrainingType       @relation(fields: [trainingTypeId], references: [id])
   sections    TemplateSection[]
