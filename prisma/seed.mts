@@ -1,96 +1,85 @@
 import "dotenv/config"
-import { PrismaClient } from "../src/generated/prisma/client.js"
-import { PrismaPg } from "@prisma/adapter-pg"
-import { Pool } from "pg"
+import { Client } from "pg"
 import bcrypt from "bcryptjs"
 
-const adapter = new PrismaPg(process.env.DATABASE_URL!)
-const prisma = new PrismaClient({ adapter })
+const client = new Client({ connectionString: process.env.DATABASE_URL! })
+await client.connect()
 
-async function main() {
-  const adminPassword = await bcrypt.hash("admin123", 12)
-  const pesertaPassword = await bcrypt.hash("peserta123", 12)
+const adminPassword = await bcrypt.hash("admin123", 12)
+const pesertaPassword = await bcrypt.hash("peserta123", 12)
 
-  await prisma.user.upsert({
-    where: { email: "admin@asn.com" },
-    update: {},
-    create: {
-      name: "Admin",
-      email: "admin@asn.com",
-      password: adminPassword,
-      role: "admin",
-    },
-  })
+await client.query(
+  `INSERT INTO "User" (id, name, email, password, role, "createdAt", "updatedAt")
+   VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+   ON CONFLICT (email) DO UPDATE SET password = $4`,
+  [crypto.randomUUID(), "Admin", "admin@asn.com", adminPassword, "admin"]
+)
 
-  await prisma.user.upsert({
-    where: { email: "peserta@asn.com" },
-    update: {},
-    create: {
-      name: "Peserta",
-      email: "peserta@asn.com",
-      password: pesertaPassword,
-      role: "peserta",
-    },
-  })
+await client.query(
+  `INSERT INTO "User" (id, name, email, password, role, "createdAt", "updatedAt")
+   VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+   ON CONFLICT (email) DO UPDATE SET password = $4`,
+  [crypto.randomUUID(), "Peserta", "peserta@asn.com", pesertaPassword, "peserta"]
+)
 
-  console.log("Akun dibuat: admin@asn.com / peserta@asn.com")
+console.log("Akun dibuat: admin@asn.com / peserta@asn.com")
 
-  const latsar = await prisma.trainingType.upsert({
-    where: { slug: "latsar" },
-    update: {},
-    create: { name: "Latsar", slug: "latsar", description: "Pelatihan Dasar CPNS" },
-  })
+const latsarId = crypto.randomUUID()
+await client.query(
+  `INSERT INTO "TrainingType" (id, name, slug, description, "createdAt", "updatedAt")
+   VALUES ($1, $2, $3, $4, NOW(), NOW())
+   ON CONFLICT (slug) DO NOTHING`,
+  [latsarId, "Latsar", "latsar", "Pelatihan Dasar CPNS"]
+)
 
-  const pkp = await prisma.trainingType.upsert({
-    where: { slug: "pkp" },
-    update: {},
-    create: { name: "PKP", slug: "pkp", description: "Pelatihan Kepemimpinan Pengawas" },
-  })
+const pkpId = crypto.randomUUID()
+await client.query(
+  `INSERT INTO "TrainingType" (id, name, slug, description, "createdAt", "updatedAt")
+   VALUES ($1, $2, $3, $4, NOW(), NOW())
+   ON CONFLICT (slug) DO NOTHING`,
+  [pkpId, "PKP", "pkp", "Pelatihan Kepemimpinan Pengawas"]
+)
 
-  const pka = await prisma.trainingType.upsert({
-    where: { slug: "pka" },
-    update: {},
-    create: { name: "PKA", slug: "pka", description: "Pelatihan Kepemimpinan Administrator" },
-  })
+const pkaId = crypto.randomUUID()
+await client.query(
+  `INSERT INTO "TrainingType" (id, name, slug, description, "createdAt", "updatedAt")
+   VALUES ($1, $2, $3, $4, NOW(), NOW())
+   ON CONFLICT (slug) DO NOTHING`,
+  [pkaId, "PKA", "pka", "Pelatihan Kepemimpinan Administrator"]
+)
 
-  const sections = [
-    { title: "Latar Belakang", order: 0 },
-    { title: "Identifikasi Isu", order: 1 },
-    { title: "Gagasan Pemecahan Isu", order: 2 },
-    { title: "Rencana Kegiatan", order: 3 },
-    { title: "Output & Outcome", order: 4 },
-    { title: "Indikator Keberhasilan", order: 5 },
-  ]
+const sections = [
+  { title: "Latar Belakang", order: 0 },
+  { title: "Identifikasi Isu", order: 1 },
+  { title: "Gagasan Pemecahan Isu", order: 2 },
+  { title: "Rencana Kegiatan", order: 3 },
+  { title: "Output & Outcome", order: 4 },
+  { title: "Indikator Keberhasilan", order: 5 },
+]
 
-  for (const tt of [latsar, pkp, pka]) {
-    const existing = await prisma.template.findFirst({
-      where: { trainingTypeId: tt.id, name: `Template ${tt.name}` },
-    })
+const types = await client.query('SELECT id, name FROM "TrainingType"')
 
-    if (!existing) {
-      await prisma.template.create({
-        data: {
-          name: `Template ${tt.name}`,
-          trainingTypeId: tt.id,
-          description: `Template default untuk ${tt.name}`,
-          sections: {
-            create: sections.map((s) => ({
-              title: s.title,
-              content: `[Konten ${s.title} akan digenerate secara otomatis]`,
-              order: s.order,
-            })),
-          },
-        },
-      })
+for (const tt of types.rows) {
+  const existing = await client.query(
+    'SELECT id FROM "Template" WHERE name = $1',
+    [`Template ${tt.name}`]
+  )
+  if (existing.rows.length === 0) {
+    const templateId = crypto.randomUUID()
+    await client.query(
+      `INSERT INTO "Template" (id, name, "trainingTypeId", description, "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+      [templateId, `Template ${tt.name}`, tt.id, `Template default untuk ${tt.name}`]
+    )
+    for (const s of sections) {
+      await client.query(
+        `INSERT INTO "TemplateSection" (id, "templateId", title, content, "order", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
+        [crypto.randomUUID(), templateId, s.title, `[Konten ${s.title} akan digenerate secara otomatis]`, s.order]
+      )
     }
   }
-
-  console.log("Seed selesai!")
 }
 
-main()
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(() => prisma.$disconnect())
+console.log("Seed selesai!")
+await client.end()
