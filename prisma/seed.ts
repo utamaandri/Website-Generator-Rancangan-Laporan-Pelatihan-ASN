@@ -1,12 +1,40 @@
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 import path from "path";
+import bcrypt from "bcryptjs";
 
 const dbPath = path.join(__dirname, "..", "dev.db");
 const adapter = new PrismaLibSql({ url: `file:${dbPath}` } as any);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  const adminPassword = await bcrypt.hash("admin123", 12);
+  const pesertaPassword = await bcrypt.hash("peserta123", 12);
+
+  await prisma.user.upsert({
+    where: { email: "admin@asn.com" },
+    update: {},
+    create: {
+      name: "Admin",
+      email: "admin@asn.com",
+      password: adminPassword,
+      role: "admin",
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "peserta@asn.com" },
+    update: {},
+    create: {
+      name: "Peserta",
+      email: "peserta@asn.com",
+      password: pesertaPassword,
+      role: "peserta",
+    },
+  });
+
+  console.log("Akun dibuat: admin@asn.com / peserta@asn.com");
+
   const latsar = await prisma.trainingType.upsert({
     where: { slug: "latsar" },
     update: {},
@@ -57,7 +85,7 @@ async function main() {
     }
   }
 
-  console.log("Database seeded successfully!");
+  console.log("Seed selesai!");
 }
 
 main()
