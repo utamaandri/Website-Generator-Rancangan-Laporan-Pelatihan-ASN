@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import PDFDocument from "pdfkit";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -25,35 +26,44 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-body { font-family: 'Times New Roman', serif; padding: 2cm; }
-h1 { text-align: center; font-size: 16pt; margin-bottom: 24pt; }
-h2 { font-size: 14pt; margin-top: 18pt; }
-p { font-size: 12pt; line-height: 1.5; text-align: justify; }
-table { width: 100%; border-collapse: collapse; margin: 12pt 0; }
-td, th { border: 1px solid black; padding: 6pt; font-size: 11pt; }
-</style>
-</head>
-<body>
-<h1>${doc.title || "Dokumen " + doc.trainingType.name}</h1>
-<p><strong>Nama:</strong> ${doc.namaPeserta || "-"}</p>
-<p><strong>Instansi:</strong> ${doc.instansi || "-"}</p>
-<p><strong>Jabatan:</strong> ${doc.jabatan || "-"}</p>
-<p><strong>Isu:</strong> ${doc.isuTerpilih || "-"}</p>
-<hr/>
-${doc.sections
-  .map(
-    (s) => `<h2>${s.title}</h2><p>${s.content.replace(/\n/g, "</p><p>")}</p>`
-  )
-  .join("")}
-</body>
-</html>`;
+  const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const pdf = new PDFDocument({ margin: 50, size: "A4" });
 
-  return new NextResponse(html, {
-    headers: { "Content-Type": "text/html; charset=utf-8" },
+    pdf.on("data", (chunk: Buffer) => chunks.push(chunk));
+    pdf.on("end", () => resolve(Buffer.concat(chunks)));
+    pdf.on("error", reject);
+
+    pdf.fontSize(16).font("Helvetica-Bold");
+    pdf.text(doc.title || `Dokumen ${doc.trainingType.name}`, { align: "center" });
+    pdf.moveDown();
+
+    pdf.fontSize(11).font("Helvetica");
+    pdf.text(`Nama: ${doc.namaPeserta || "-"}`);
+    pdf.text(`Instansi: ${doc.instansi || "-"}`);
+    pdf.text(`Jabatan: ${doc.jabatan || "-"}`);
+    pdf.text(`Isu: ${doc.isuTerpilih || "-"}`);
+    pdf.moveDown();
+
+    for (const section of doc.sections) {
+      pdf.fontSize(13).font("Helvetica-Bold");
+      pdf.text(section.title);
+      pdf.moveDown(0.5);
+      pdf.fontSize(11).font("Helvetica");
+      const lines = section.content.split("\n");
+      for (const line of lines) {
+        pdf.text(line, { align: "justify" });
+      }
+      pdf.moveDown();
+    }
+
+    pdf.end();
+  });
+
+  return new NextResponse(new Uint8Array(pdfBuffer), {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="dokumen-${doc.id}.pdf"`,
+    },
   });
 }

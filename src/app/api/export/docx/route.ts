@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  AlignmentType,
+} from "docx";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -25,20 +33,78 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  let docxContent = `DOKUMEN ${doc.trainingType.name}\r\n\r\n`;
-  docxContent += `Nama: ${doc.namaPeserta || "-"}\r\n`;
-  docxContent += `Instansi: ${doc.instansi || "-"}\r\n`;
-  docxContent += `Jabatan: ${doc.jabatan || "-"}\r\n`;
-  docxContent += `Isu: ${doc.isuTerpilih || "-"}\r\n\r\n`;
+  const children: Paragraph[] = [];
 
-  for (const section of doc.sections) {
-    docxContent += `${section.title}\r\n${"=".repeat(section.title.length)}\r\n`;
-    docxContent += `${section.content.replace(/\n/g, "\r\n")}\r\n\r\n`;
+  children.push(
+    new Paragraph({
+      text: doc.title || `Dokumen ${doc.trainingType.name}`,
+      heading: HeadingLevel.HEADING_1,
+      alignment: AlignmentType.CENTER,
+    }),
+    new Paragraph({ spacing: { after: 200 } })
+  );
+
+  const infoItems = [
+    { label: "Nama", value: doc.namaPeserta },
+    { label: "Instansi", value: doc.instansi },
+    { label: "Jabatan", value: doc.jabatan },
+    { label: "Isu", value: doc.isuTerpilih },
+  ];
+
+  for (const item of infoItems) {
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: `${item.label}: `, bold: true }),
+          new TextRun(item.value || "-"),
+        ],
+        spacing: { after: 60 },
+      })
+    );
   }
 
-  const buffer = Buffer.from(docxContent, "utf-8");
+  children.push(new Paragraph({ spacing: { after: 200 } }));
 
-  return new NextResponse(buffer, {
+  for (const section of doc.sections) {
+    children.push(
+      new Paragraph({
+        text: section.title,
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 300, after: 100 },
+      })
+    );
+
+    const lines = section.content.split("\n");
+    for (const line of lines) {
+      if (line.trim()) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun(line)],
+            spacing: { after: 80 },
+            alignment: AlignmentType.JUSTIFIED,
+          })
+        );
+      }
+    }
+  }
+
+  const docx = new Document({
+    title: doc.title || "Dokumen",
+    description: `Dokumen ${doc.trainingType.name}`,
+    styles: {
+      default: {
+        document: {
+          run: { font: "Times New Roman", size: 24 },
+          paragraph: { spacing: { line: 360 } },
+        },
+      },
+    },
+    sections: [{ children }],
+  });
+
+  const buffer = await Packer.toBuffer(docx);
+
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
