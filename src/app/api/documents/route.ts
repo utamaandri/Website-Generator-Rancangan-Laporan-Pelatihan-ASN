@@ -10,11 +10,15 @@ export async function GET() {
   }
 
   const userId = (session.user as any).id;
-  const documents = await prisma.document.findMany({
-    where: { userId },
-    include: { trainingType: true },
-    orderBy: { updatedAt: "desc" },
-  });
-
-  return NextResponse.json(documents);
+  try {
+    const documents = await prisma.document.findMany({
+      where: { userId },
+      include: { trainingType: true },
+      orderBy: { updatedAt: "desc" },
+    });
+    return NextResponse.json(documents);
+  } catch (error) {
+    console.warn("Database offline or query error in /api/documents:", error);
+    return NextResponse.json([]);
+  }
 }

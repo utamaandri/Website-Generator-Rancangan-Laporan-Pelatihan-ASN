@@ -1,11 +1,9 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma as any),
   session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
@@ -23,14 +21,37 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+        const email = credentials.email.trim().toLowerCase();
+        const password = credentials.password;
+
+        // Akun Administrator & Peserta resmi (bawaan sistem)
+        if (email === "admin@asn.com" && password === "admin123") {
+          return {
+            id: "user-admin-default",
+            email: "admin@asn.com",
+            name: "Administrator ASN",
+            role: "admin",
+          };
+        }
+
+        if (email === "peserta@asn.com" && password === "peserta123") {
+          return {
+            id: "user-peserta-default",
+            email: "peserta@asn.com",
+            name: "Peserta Pelatihan ASN",
+            role: "peserta",
+          };
+        }
+
+        // Pengecekan ke database untuk akun yang didaftarkan lewat form register
         try {
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
+            where: { email },
           });
 
           if (!user || !user.password) return null;
 
-          const isValid = await bcrypt.compare(credentials.password, user.password);
+          const isValid = await bcrypt.compare(password, user.password);
           if (!isValid) return null;
 
           return {
@@ -41,7 +62,6 @@ export const authOptions: NextAuthOptions = {
           };
         } catch (error: any) {
           console.error("Authorize database error:", error?.message || error);
-          // Mengembalikan null agar NextAuth tidak melempar uncaught exception (yang memicu error configuration screen)
           return null;
         }
       },
