@@ -1,13 +1,27 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam) {
+      if (errorParam === "Configuration") {
+        setError(
+          "Koneksi ke database gagal atau server bermasalah. Pastikan database Supabase sudah di-restore (unpause)."
+        );
+      } else {
+        setError("Gagal masuk. Silakan periksa email dan password Anda.");
+      }
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -25,7 +39,7 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setError("Email atau password salah");
+      setError("Email atau password salah (atau database sedang tidak aktif)");
       setLoading(false);
     } else {
       router.push("/dashboard");
@@ -40,7 +54,7 @@ export default function LoginPage() {
           Masuk
         </h1>
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm leading-relaxed">
             {error}
           </div>
         )}
@@ -85,5 +99,19 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-900" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
