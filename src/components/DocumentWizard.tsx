@@ -29,6 +29,8 @@ export function DocumentWizard() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [keywordInput, setKeywordInput] = useState("");
+  const [isuSource, setIsuSource] = useState<string>("");
+  const [dokumenSource, setDokumenSource] = useState<string>("");
   const [form, setForm] = useState<FormData>({
     namaPeserta: "",
     jenisPelatihan: "",
@@ -67,6 +69,7 @@ export function DocumentWizard() {
       });
       const data = await res.json();
       setForm({ ...form, isuOptions: data.isuOptions || [] });
+      setIsuSource(data.source || "template");
     } catch {
       setForm({
         ...form,
@@ -78,6 +81,7 @@ export function DocumentWizard() {
           "Kurangnya koordinasi antar unit kerja dalam penyelesaian target kerja",
         ],
       });
+      setIsuSource("template");
     } finally {
       setGenerating(false);
     }
@@ -104,6 +108,7 @@ export function DocumentWizard() {
         documentId: data.id,
         sections: data.sections || [],
       }));
+      setDokumenSource(data.source || "template");
     } catch {
       setForm((prev) => ({
         ...prev,
@@ -318,9 +323,16 @@ export function DocumentWizard() {
 
       {step === 1 && (
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Generator Isu Otomatis
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Generator Isu Otomatis
+            </h2>
+            {isuSource === "gemini-ai" && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-900 border border-blue-200">
+                ✨ Powered by Google Gemini AI
+              </span>
+            )}
+          </div>
           <p className="text-gray-500 mb-6">
             Klik tombol di bawah untuk menghasilkan opsi isu berdasarkan data
             yang Anda masukkan.
@@ -330,9 +342,16 @@ export function DocumentWizard() {
             <button
               onClick={handleGenerateIsu}
               disabled={generating}
-              className="bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition disabled:opacity-50"
+              className="bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition disabled:opacity-50 flex items-center gap-2"
             >
-              {generating ? "Menghasilkan..." : "Generate Isu"}
+              {generating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  <span>AI sedang merumuskan isu...</span>
+                </>
+              ) : (
+                "Generate Isu"
+              )}
             </button>
           ) : (
             <div className="space-y-3">
@@ -361,9 +380,16 @@ export function DocumentWizard() {
               <button
                 onClick={handleGenerateIsu}
                 disabled={generating}
-                className="text-blue-900 text-sm font-medium hover:underline mt-2"
+                className="text-blue-900 text-sm font-medium hover:underline mt-2 inline-flex items-center gap-1.5"
               >
-                {generating ? "Memperbarui..." : "Generate Ulang"}
+                {generating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-900 border-t-transparent" />
+                    <span>Memperbarui...</span>
+                  </>
+                ) : (
+                  "Generate Ulang"
+                )}
               </button>
             </div>
           )}
@@ -372,9 +398,16 @@ export function DocumentWizard() {
 
       {step === 2 && (
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Generate Dokumen
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Generate Dokumen
+            </h2>
+            {dokumenSource === "gemini-ai" && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-900 border border-blue-200">
+                ✨ Disusun oleh Google Gemini AI
+              </span>
+            )}
+          </div>
           <p className="text-gray-500 mb-6">
             Sistem akan menyusun narasi dokumen berdasarkan isu yang dipilih
             dan template resmi {form.jenisPelatihan}.
@@ -384,9 +417,16 @@ export function DocumentWizard() {
             <button
               onClick={handleGenerateDokumen}
               disabled={loading}
-              className="bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition disabled:opacity-50"
+              className="bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition disabled:opacity-50 flex items-center gap-2"
             >
-              {loading ? "Menyusun Dokumen..." : "Generate Dokumen"}
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  <span>AI sedang menyusun seluruh bab rancangan...</span>
+                </>
+              ) : (
+                "Generate Dokumen"
+              )}
             </button>
           ) : (
             <div className="space-y-4">

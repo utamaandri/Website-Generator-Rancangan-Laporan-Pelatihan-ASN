@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { generateDokumenWithAI } from "@/lib/gemini";
 
-function generateSection(
+function generateSectionFallback(
   title: string,
   nama: string,
   instansi: string,
@@ -13,67 +14,73 @@ function generateSection(
   jenis: string
 ): string {
   const templates: Record<string, string> = {
-    "Latar Belakang": `Berdasarkan tugas dan fungsi ${jabatan} di ${instansi}, terdapat permasalahan terkait ${isu}. Sebagai peserta ${jenis}, penulis perlu menyusun rancangan aktualisasi untuk memberikan kontribusi nyata dalam menyelesaikan permasalahan tersebut. Rancangan ini disusun dengan memperhatikan nilai-nilai BerAKHLAK dan prinsip-prinsip good governance.
+    "Latar Belakang": `Berdasarkan amanat Undang-Undang Nomor 20 Tahun 2023 tentang Aparatur Sipil Negara, Pegawai ASN dituntut memiliki integritas, profesionalisme, serta mampu menginternalisasi nilai-nilai dasar ASN BerAKHLAK (Berorientasi Pelayanan, Akuntabel, Kompeten, Harmonis, Loyal, Adaptif, dan Kolaboratif).
 
-${nama} sebagai ${jabatan} memiliki tugas pokok ${tugasFungsi}. Dalam pelaksanaannya, ditemukan bahwa ${isu}. Oleh karena itu, perlu dirumuskan suatu gagasan pemecahan isu yang dapat diimplementasikan dalam kegiatan aktualisasi.`,
+Dalam menjalankan tugas dan fungsi sebagai ${jabatan} di lingkungan ${instansi}, ${nama} memiliki tanggung jawab dalam ${tugasFungsi}. Namun dalam pelaksanaannya, masih dijumpai permasalahan krusial yaitu: ${isu}. 
 
-    "Identifikasi Isu": `Berdasarkan analisis permasalahan yang ditemukan, identifikasi isu yang dapat diangkat adalah sebagai berikut:
+Kondisi tersebut secara langsung mempengaruhi optimalisasi kinerja organisasi dan kualitas pelayanan kepada stakeholder. Oleh karena itu, melalui program pelatihan ${jenis}, penulis menyusun rancangan aktualisasi/aksi perubahan ini sebagai langkah strategis dan inovatif untuk menyelesaikan isu tersebut secara berkelanjutan.`,
 
-1. ${isu}
-2. Belum optimalnya koordinasi antar unit terkait penyelesaian permasalahan
-3. Kurangnya pemahaman pegawai terhadap prosedur operasional standar
-4. Belum optimalnya penggunaan teknologi informasi dalam pelaksanaan tugas
-5. Rendahnya partisipasi stakeholder dalam mendukung pencapaian target`,
+    "Identifikasi Isu": `Berdasarkan pengamatan dan identifikasi di lingkungan kerja ${instansi}, berikut adalah analisis isu yang berkembang:
 
-    "Gagasan Pemecahan Isu": `Berdasarkan identifikasi isu yang telah dilakukan, gagasan pemecahan isu yang ditawarkan adalah sebagai berikut:
+1. Isu Utama (Prioritas):
+   ${isu}
+2. Isu Sekunder:
+   - Belum optimalnya koordinasi dan integrasi antar unit terkait dalam penanganan masalah.
+   - Terbatasnya media informasi serta pedoman teknis/SOP yang dapat diakses secara mudah.
+   - Pemanfaatan teknologi digital yang belum maksimal untuk menunjang efektivitas tugas.
 
-A. Penyebab langsung:
-- Kurangnya sosialisasi dan pemahaman terhadap prosedur
-- Belum optimalnya pengawasan dan evaluasi
-- Terbatasnya sumber daya yang tersedia
+Dampak jika isu utama tidak segera diselesaikan:
+- Terhambatnya pencapaian target kinerja sasaran strategis instansi.
+- Potensi penurunan tingkat kepuasan dan kepercayaan pengguna layanan/stakeholder.
+- Ketidakefisienan penggunaan waktu dan sumber daya organisasi.`,
 
-B. Alternatif pemecahan:
-1. Menyusun dan mensosialisasikan SOP yang jelas dan terukur
-2. Meningkatkan koordinasi dan komunikasi antar unit terkait
-3. Mengoptimalkan pemanfaatan teknologi informasi
-4. Melakukan monitoring dan evaluasi secara berkala
+    "Gagasan Pemecahan Isu": `Guna menyelesaikan akar permasalahan dari isu "${isu}", dirumuskan gagasan kreatif dan inovatif pemecahan isu sebagai berikut:
 
-C. Gagasan terpilih:
-Berdasarkan analisis APKL (Aktual, Problematik, Kekhalayakan, Layak), gagasan pemecahan isu yang dipilih adalah upaya mengoptimalkan pelaksanaan tugas pokok melalui perbaikan sistem dan prosedur kerja.`,
+A. Analisis Akar Masalah:
+- Belum adanya standardisasi alur kerja dan petunjuk teknis yang terintegrasi.
+- Belum optimalnya digitalisasi proses kerja dalam pemantauan dan tindak lanjut.
+- Perlunya penguatan pemahaman bagi pelaksana teknis di lapangan.
 
-    "Rencana Kegiatan": `Rencana kegiatan aktualisasi yang akan dilaksanakan untuk mewujudkan gagasan pemecahan isu adalah sebagai berikut:
+B. Gagasan Inovasi Terpilih:
+Optimalisasi pelaksanaan tugas pokok dan fungsi ${jabatan} melalui inovasi perbaikan tata kelola, penyusunan SOP digital, dan pelaksanaan sosialisasi terstruktur di ${instansi}.
 
-| No | Kegiatan | Tahapan | Output | Jadwal |
-|----|----------|---------|--------|--------|
-| 1 | Sosialisasi dan koordinasi | 1. Menyusun materi<br>2. Melaksanakan sosialisasi<br>3. Evaluasi hasil | Terlaksananya sosialisasi | Minggu 1-2 |
-| 2 | Penyusunan SOP/prosedur | 1. Mengumpulkan data<br>2. Menyusun draft<br>3. Validasi dan penetapan | Dokumen SOP | Minggu 2-3 |
-| 3 | Implementasi dan monitoring | 1. Uji coba penerapan<br>2. Monitoring pelaksanaan<br>3. Evaluasi dan perbaikan | Terlaksananya implementasi | Minggu 3-4 |`,
+C. Nilai Tambah Inovasi:
+- Memberikan kepastian alur kerja dan transparansi.
+- Meningkatkan kecepatan respon pelayanan secara signifikan.`,
 
-    "Output & Outcome": `Output yang diharapkan dari kegiatan aktualisasi ini adalah:
+    "Rencana Kegiatan": `Rencana kegiatan aktualisasi yang akan dilaksanakan dalam masa habituasi adalah sebagai berikut:
 
-1. Terlaksananya sosialisasi kepada seluruh pegawai terkait prosedur kerja
-2. Tersusunnya dokumen SOP/standar kerja yang jelas dan terukur
-3. Terimplementasikannya sistem kerja baru yang lebih efektif dan efisien
+| No | Tahapan Kegiatan | Output / Bukti Fisik | Keterkaitan Nilai BerAKHLAK |
+|----|------------------|----------------------|------------------------------|
+| 1  | Melakukan konsultasi dan koordinasi dengan Mentor terkait rancangan inovasi | Notula konsultasi, lembar persetujuan mentor | Akuntabel, Kolaboratif, Harmonis |
+| 2  | Menyusun draft Standar Operasional Prosedur (SOP) dan instrumen pendukung | Draft dokumen SOP, checklist verifikasi | Kompeten, Berorientasi Pelayanan |
+| 3  | Mengembangkan media sosialisasi dan modul panduan pelaksanaan | Materi presentasi / infografis / modul panduan | Adaptif, Kompeten |
+| 4  | Melaksanakan sosialisasi dan uji coba penerapan di unit kerja | Dokumentasi foto/video, daftar hadir peserta | Berorientasi Pelayanan, Kolaboratif |
+| 5  | Evaluasi dan penyusunan laporan hasil aktualisasi | Laporan evaluasi, testimoni pengguna layanan | Akuntabel, Loyal |`,
 
-Outcome yang diharapkan:
-1. Meningkatnya pemahaman pegawai terhadap tugas dan fungsi masing-masing
-2. Meningkatnya efektivitas dan efisiensi pelaksanaan tugas pokok
-3. Meningkatnya kualitas pelayanan kepada stakeholder
-4. Terwujudnya budaya kerja yang profesional dan akuntabel`,
+    "Output & Outcome": `A. Output (Keluaran Langsung):
+1. Tersusunnya dokumen SOP / Petunjuk Teknis yang disahkan pimpinan.
+2. Tersedianya media sosialisasi digital dan instrumen kerja yang siap digunakan.
+3. Terlaksananya sosialisasi kepada seluruh rekan kerja dan unit terkait.
+4. Tersusunnya laporan hasil evaluasi pelaksanaan kegiatan.
 
-    "Indikator Keberhasilan": `Indikator keberhasilan dari kegiatan aktualisasi ini adalah:
+B. Outcome (Dampak Positif Jangka Panjang):
+1. Meningkatnya kepatuhan terhadap prosedur kerja hingga 100%.
+2. Peningkatan efisiensi waktu penyelesaian tugas hingga 30%.
+3. Terciptanya iklim kerja yang lebih kolaboratif, transparan, dan akuntabel di ${instansi}.
+4. Meningkatnya kepuasan stakeholder terhadap output kerja ${jabatan}.`,
 
-1. Terlaksananya sosialisasi dengan tingkat kehadiran minimal 90%
-2. Tersusunnya dokumen SOP tepat waktu
-3. Meningkatnya capaian kinerja unit kerja sebesar minimal 20%
-4. Meningkatnya indeks kepuasan layanan
-5. Tertanamnya nilai-nilai BerAKHLAK dalam pelaksanaan tugas sehari-hari
+    "Indikator Keberhasilan": `Keberhasilan pelaksanaan kegiatan diukur melalui indikator-indikator SMART:
 
-Indikator ini akan diukur melalui:
-- Pre-test dan post-test pemahaman pegawai
-- Capaian target kinerja bulanan
-- Survei kepuasan pengguna layanan
-- Observasi langsung pelaksanaan tugas`,
+1. Indikator Kuantitatif:
+   - Terlaksananya seluruh 5 tahapan kegiatan sesuai jadwal (100%).
+   - Tingkat partisipasi dalam sosialisasi mencapai minimal 90%.
+   - Penurunan kendala teknis pada proses pelaksanaan tugas minimal 25%.
+
+2. Indikator Kualitatif:
+   - Respon dan feedback positif dari Mentor serta pimpinan unit kerja.
+   - Peningkatan pemahaman pegawai terhadap alur kerja baru.
+   - Terinternalisasinya nilai-nilai BerAKHLAK dalam budaya kerja harian.`,
   };
 
   return templates[title] || `Bagian ${title} dari dokumen ${jenis} peserta ${nama}`;
@@ -112,19 +119,39 @@ export async function POST(req: Request) {
       "Indikator Keberhasilan",
     ];
 
-    const sections = sectionTitles.map((title, i) => ({
-      title,
-      content: generateSection(
+    // Coba susun dokumen menggunakan Google Gemini AI
+    let sections: { title: string; content: string; order: number }[] = [];
+    const aiSections = await generateDokumenWithAI({
+      namaPeserta: namaPeserta || "Peserta",
+      jenisPelatihan: jenisPelatihan || "Latsar",
+      instansi: instansi || "Instansi Pemerintah",
+      jabatan: jabatan || "Jabatan",
+      tugasFungsi: tugasFungsi || "Tugas dan Fungsi",
+      isuTerpilih: isuTerpilih || "Isu Terpilih",
+    });
+
+    if (aiSections && aiSections.length >= 6) {
+      sections = aiSections.map((sec, i) => ({
+        title: sec.title,
+        content: sec.content,
+        order: i,
+      }));
+    } else {
+      // Fallback ke template komprehensif jika Gemini belum dikonfigurasi / error
+      sections = sectionTitles.map((title, i) => ({
         title,
-        namaPeserta || "Peserta",
-        instansi || "Instansi",
-        jabatan || "Jabatan",
-        tugasFungsi || "Tugas dan Fungsi",
-        isuTerpilih || "Isu yang terpilih",
-        jenisPelatihan || "Latsar"
-      ),
-      order: i,
-    }));
+        content: generateSectionFallback(
+          title,
+          namaPeserta || "Peserta",
+          instansi || "Instansi",
+          jabatan || "Jabatan",
+          tugasFungsi || "Tugas dan Fungsi",
+          isuTerpilih || "Isu yang terpilih",
+          jenisPelatihan || "Latsar"
+        ),
+        order: i,
+      }));
+    }
 
     const document = await prisma.document.create({
       data: {
@@ -151,9 +178,10 @@ export async function POST(req: Request) {
         title: s.title,
         content: s.content,
       })),
+      source: aiSections ? "gemini-ai" : "template",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error in /api/generate/dokumen:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
